@@ -4,24 +4,21 @@
 #include <array>
 #include <iostream>
 #include <memory>
+#include <map>
+#include <raylib.h>
 
-#include "raylib.h"
-#include "states.h"
-
-const float ALPHA_MIN = 0.01f;
-const Color DARK_COLOR = {0x79, 0x41, 0x19, 0xFF};
-const Color LIGHT_COLOR = {0xF2,0xEE,0xE2,0xFF};
-const int BRIGHTNESS = 125;
-const int BLUR = 2;
+#include "attributes.h"
 
 class ChessTexture{
     std::string piecesFilePath;
 
     std::array<Texture2D, 12> pieceTextures;
     Texture2D boardTexture;
-    size_t pieceScale;
-    size_t boardScale;
+    Texture2D selectedTexture;
+    Texture2D movedTexture;
+    Texture2D checkTexture;
 
+    size_t boardSize;
     size_t boardGridSize;
 
     bool isLoaded;
@@ -35,20 +32,21 @@ class ChessTexture{
         }
     }
 
-    
     void _readPiecesImage(){
         // column ->[R, B, Q, K, N, P] row -> [black, white]
         Image chesspiecesImg = LoadImage(piecesFilePath.c_str());
-        if (!IsImageValid(chesspiecesImg)) throw std::runtime_error("Invalid Pieces Image");
+        if (!IsImageValid(chesspiecesImg)) throw std::runtime_error("Invalid Pieces Image: " + piecesFilePath);
         float dx = chesspiecesImg.width/6.0f; // num pieces
         float dy = chesspiecesImg.height/2.0f; // num colors
         Image pieceImg;
+        Piece piece;
         for (int y = 0; y < 2; y++){
             for (int x = 0; x < 6; x++){
                 pieceImg = ImageFromImage(chesspiecesImg, {dx*x,dy*y,dx, dy});
-                
-                ImageAlphaCrop(&pieceImg, ALPHA_MIN);
-                _resizeImage(&pieceImg, pieceScale);
+                piece = getPieceFromTextureIndex(x+y*6);
+
+                ImageAlphaCrop(&pieceImg, PieceTextureAttribute::ALPHA_MIN);
+                _resizeImage(&pieceImg, PiecesAttributes.at(piece).textureScale * boardGridSize);
                 
                 if (!IsImageValid(pieceImg)) throw std::runtime_error("Invalid Piece Image");
                 this->pieceTextures[x+y*6] = LoadTextureFromImage(pieceImg);
@@ -58,21 +56,21 @@ class ChessTexture{
         }
     }
     void _readBoardImage(){
-        Image chessboardImg = GenImagePerlinNoise(boardScale, boardScale, 0, 0, 4.0f);
-        Image whiteImg = GenImagePerlinNoise(boardScale, boardScale, boardScale*2, boardScale*2, 4.0f);
 
-        ImageColorBrightness(&chessboardImg, BRIGHTNESS);   
-        ImageBlurGaussian(&chessboardImg, BLUR);  
-        ImageColorTint(&chessboardImg, DARK_COLOR);    
+        Image chessboardImg = GenImagePerlinNoise(boardSize, boardSize, 0, 0, 4.0f);
+        Image whiteImg = GenImagePerlinNoise(boardSize, boardSize, boardSize*2, boardSize*2, 4.0f);
 
-        ImageColorBrightness(&whiteImg, BRIGHTNESS);   
-        ImageBlurGaussian(&whiteImg, BLUR);    
-        ImageColorTint(&whiteImg, LIGHT_COLOR);    
+        ImageColorBrightness(&chessboardImg, BoardTextureAttrubute::BRIGHTNESS);   
+        ImageBlurGaussian(&chessboardImg, BoardTextureAttrubute::BLUR);  
+        ImageColorTint(&chessboardImg, BoardTextureAttrubute::DARK_COLOR);    
+
+        ImageColorBrightness(&whiteImg, BoardTextureAttrubute::BRIGHTNESS);   
+        ImageBlurGaussian(&whiteImg, BoardTextureAttrubute::BLUR);    
+        ImageColorTint(&whiteImg, BoardTextureAttrubute::LIGHT_COLOR);    
         
-        _resizeImage(&chessboardImg, boardScale);
-        _resizeImage(&whiteImg, boardScale); 
+        _resizeImage(&chessboardImg, boardSize);
+        _resizeImage(&whiteImg, boardSize); 
         
-        this->boardGridSize = this->boardScale/8;
         float ds = this->boardGridSize;
         for (int i = 0; i < 8; i++){
             for (int j = 0; j < 8; j++){
@@ -87,21 +85,53 @@ class ChessTexture{
         UnloadImage(chessboardImg);
         UnloadImage(whiteImg);
     }
+    void _createOtherTextures(){
+        Image movedImage =    GenImageColor(this->boardGridSize, this->boardGridSize, {0x00, 0x10, 0x50, 0x90});   
+        Image selectedImage = GenImageColor(this->boardGridSize, this->boardGridSize, {0x10, 0x50, 0x10, 0x90});
+        Image checkImage =    GenImageColor(this->boardGridSize, this->boardGridSize, {0x50, 0x10, 0x10, 0x90});
+        
+        this->movedTexture = LoadTextureFromImage(movedImage   );  
+        this->selectedTexture= LoadTextureFromImage(selectedImage);  
+        this->checkTexture = LoadTextureFromImage(checkImage   );  
 
+        UnloadImage(movedImage   );
+        UnloadImage(selectedImage);
+        UnloadImage(checkImage   );
+    }
     public:
-    ChessTexture(std::string piecesFilePath, size_t pieceScale, size_t boardScale)
-     : piecesFilePath(piecesFilePath), pieceScale(pieceScale), boardScale(boardScale){
+    ChessTexture(std::string piecesFilePath, size_t boardSize)
+     : piecesFilePath(piecesFilePath), boardSize(boardSize){
+        this->boardGridSize = this->boardSize/8;
         _readPiecesImage();
         _readBoardImage();
+        _createOtherTextures();
         this->isLoaded = true;
     }
-    Texture2D& getPieceTexture(int i){
+    const Texture2D& getPieceTexture(int i){
         if (!isLoaded) throw std::runtime_error("Textures not initialized");
         return this->pieceTextures[i];
     }
-    Texture2D& getBoardTexture(){
+    const Texture2D& getBoardTexture(){
         if (!isLoaded) throw std::runtime_error("Textures not initialized");
         return this->boardTexture;
     }
-    
+    const Texture2D& getSelectedTexture(){
+        if (!isLoaded) throw std::runtime_error("Textures not initialized");
+        return this->selectedTexture;
+    }
+    const Texture2D& getMovedTexture(){
+        if (!isLoaded) throw std::runtime_error("Textures not initialized");
+        return this->movedTexture;
+    }
+    const Texture2D& getCheckTexture(){
+        if (!isLoaded) throw std::runtime_error("Textures not initialized");
+        return this->checkTexture;
+    }
+    const std::array<Texture2D, 12>& getAllPiecesTexture(){
+        return this->pieceTextures;
+    }
+    const size_t getGridSize(){
+        return this->boardGridSize;
+    }
+
 };

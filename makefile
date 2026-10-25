@@ -2,22 +2,29 @@ RAYLIB_DIR = $(HOME)/libs/raylib/src
 
 
 LIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
-
-CFLAGS = -O2 -g
+DEBUG = -g
+CFLAGS = -O2
 CC = g++
 LIBS =-lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 SRCS = main.cpp
+HDRS = game.h states.h textures.h attributes.h interactions.h
 
-build: main
+debug: build/debug
+release: build/release
 
-main: main.cpp
-	$(CC) $(CFLAGS) main.cpp -o main $(LIBS)
-test: testing.cpp
-	$(CC) $(CFLAGS) testing.cpp -o test $(LIBS)
-run: main
-	./main
-run_test: test
-	./test
-	rm test
-clean: main
-	rm main
+build/debug: main.cpp $(HDRS)
+	@echo 'compiling debug'
+	$(CC) $(CFLAGS) $(DEBUG) main.cpp -o build/debug $(LIBS)
+
+build/release: main.cpp $(HDRS)
+	@echo 'compiling release'
+	$(CC) $(CFLAGS) main.cpp -o build/release $(LIBS)
+
+run_debug: build/debug
+	./build/debug
+
+run_release: build/release
+	./build/release
+
+clean: build
+	rm build/*

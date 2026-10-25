@@ -2,8 +2,8 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "Run",
-            "command": "make run",
+            "label": "Debug",
+            "command": "make debug",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -11,8 +11,8 @@
         },
         {
             "type": "shell",
-            "label": "Build",
-            "command": "make build",
+            "label": "Release",
+            "command": "make release",
             "group": {
                 "kind": "build"
             }

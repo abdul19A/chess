@@ -1,44 +1,28 @@
+#include <raylib.h>
+#include "game.h"
 
-
-#include "raylib.h"
-#include "textures.h"
-int main(void)
-{
+int main(int argc, char** argv)
+{  
     const int screenWidth = 800;
     const int screenHeight = 800;
-
+    SetTraceLogLevel(LOG_WARNING); 
     InitWindow(screenWidth, screenHeight, "chess");
-    ChessTexture ct("resources/chesspieces.png", 80, 800);
-    Texture2D& txt1 = ct.getBoardTexture();
-    Texture2D& txt2 = ct.getPieceTexture(0);
     SetTargetFPS(60);
-    //---------------------------------------------------------------------------------------
+    ChessGame game({100, 100}, 600);
+    std::cout << __FILE__ << std::endl;
+    #ifdef DEBUG_MODE
+        std::cout << "RUNNING: DEBUG MODE" << std::endl;
+    #else
+        std::cout << "RUNNING: RELEASE MODE" << std::endl;
+    #endif
 
-    // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
-    {
-        // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
-        //----------------------------------------------------------------------------------
-
-        // Draw
-        //----------------------------------------------------------------------------------
+    while (!WindowShouldClose()){
+        game.update();
         BeginDrawing();
-
             ClearBackground(RAYWHITE);
-            DrawTexture(txt1, 0, 0, WHITE);
-            DrawTexture(txt2, 0, 0, WHITE);
-
+            game.Draw();
         EndDrawing();
-        //----------------------------------------------------------------------------------
     }
-
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-   
-    CloseWindow();                // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
-
+    CloseWindow();
     return 0;
 }
