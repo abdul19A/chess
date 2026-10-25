@@ -1,0 +1,22 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Run",
+            "command": "make run",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "Build",
+            "command": "make build",
+            "group": {
+                "kind": "build"
+            }
+        }
+    ],
+    "version": "2.0.0"
+}
