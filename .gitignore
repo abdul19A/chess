@@ -1,3 +1,2 @@
-FENstrings.txt
-main
-testing.cpp
+build/*
+*.o

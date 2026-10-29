@@ -2,30 +2,22 @@
 #include <set>
 #include <sstream>
 #include <bitset>
+#include <iostream>
 
 #include "attributes.h"
-// only one pawn is enpassantable per position so 8 bits for which col, one for pawn color, 4 for castling rights, 1 for moving
-// total 16 bits;
 
-// general use helpers
-inline bool isNumeric(std::string s){
-    if (s == "") return false;
-    for (char c: s){
-        if (c > '9' || c < '0') return false;
-    }
-    return true;
-}
 
 class ChessState{
-    
-    Piece* stateArray; // a8 = 0 h1 = 63
+    // class for storing chess states
+    private:
+    Piece stateArray[64]; // a8 = 0 h1 = 63
     uint16_t numHalfMoves; // max number of FULL moves is 2 ^ 15 = 32768, parity decides who to move
     Position enpassantMove; // position behind enpassantable pawn (0-64)
     uint8_t castlingMove; // who can castle 0000
-    uint8_t lastPawnMove; // 50 move rule
-    // 64 bytes + 2 bytes + 1 byte + 1 byte + 1 byte = 69 + pad = 70 bytes, I can afford to waste 1 byte.
+    uint8_t lastPawnMove; // 50 move rule // small counter
+
     public:
-    void _populateWithFEN(std::string FEN){
+    void populateWithFEN(std::string FEN){
         // inputs a valid FEN string
         std::istringstream iss(FEN);
 
@@ -71,7 +63,7 @@ class ChessState{
         
         // fill enpassant move
         if (isValidPositionString(enpassantMoveString)){
-            this->enpassantMove = getIndexPosition(enpassantMoveString[0], enpassantMoveString[1]);
+            this->enpassantMove = getIndexPosition(enpassantMoveString.substr(0, 2));
         }
         else if(enpassantMoveString == "-") 
             this->enpassantMove = -1; // aka invalid move;
@@ -97,29 +89,81 @@ class ChessState{
         else 
             this->lastPawnMove = stoi(lastPawnMoveString); // starts at 1 idk why
     }
-    
-    ChessState(std::string FEN){
-        this->stateArray = new Piece[64];
-        _populateWithFEN(FEN);
-    };
+    std::string getFEN(){
+        std::ostringstream oss;
+        int spaceCount;
+        char curPiece;
+        // piece array
+        for (int i = 0; i < 64; i+=8){
+            if (i > 0) oss << "/";
+            spaceCount = 0;
+            for (int j = 0; j < 8; j++){
+                curPiece = this->stateArray[j+i];
+                if (curPiece == ' '){
+                    spaceCount++;
+                }
+                else{
+                    if (spaceCount > 0){
+                        oss << spaceCount;
+                    }
+                    spaceCount = 0;
+                    oss << curPiece;
+                }
+            }
+            if (spaceCount > 0){
+                oss << spaceCount;
+            }
+        }
+        // to move
+        oss << " ";
+        if (isWhiteToMove()){
+            oss << "w";
+        }
+        else {
+            oss << "b";
+        }
+        
+        // castling
+        oss << " ";
+        if (castlingMove){
+            if ((castlingMove & 0b0001) == 0b0001) oss << "K";
+            if ((castlingMove & 0b0010) == 0b0010) oss << "Q";
+            if ((castlingMove & 0b0100) == 0b0100) oss << "k";
+            if ((castlingMove & 0b1000) == 0b1000) oss << "q";
+        }
+        else{
+            oss << "-";
+        }
+        // enpassant
+        oss << " ";
+        if (isValidPosition(this->enpassantMove)){
+            oss << getChessPosition(this->enpassantMove);
+        }
+        else {
+            oss << "-";
+        }
+        // num pawn moves
+        oss << " ";
+        oss << (int)this->lastPawnMove;
 
+        // num full moves
+        oss << " ";
+        oss << (int)(this->numHalfMoves)/2+1;
+
+        return oss.str();
+    }
+    ChessState(std::string FEN){
+        populateWithFEN(FEN);
+    };
     ChessState(const ChessState& other){
-        this->stateArray = new Piece[64];
         for (int i = 0; i < 64; i++) this->stateArray[i] = other.stateArray[i];
         this->numHalfMoves = other.numHalfMoves;
         this->enpassantMove = other.enpassantMove;
         this->castlingMove = other.castlingMove;
         this->lastPawnMove = other.lastPawnMove;
     }
-
-    void operator=(const ChessState& other){
-        for (int i = 0; i < 64; i++) this->stateArray[i] = other.stateArray[i];
-        this->numHalfMoves = other.numHalfMoves;
-        this->enpassantMove = other.enpassantMove;
-        this->castlingMove = other.castlingMove;
-        this->lastPawnMove = other.lastPawnMove;
-    } 
-    void print(){
+    
+    void print() const{
         for (int j = 0; j < 8; j++){
             for (int i = 0; i < 8; i++) std::cout << "+--";
             std::cout << "+" << std::endl;
@@ -135,13 +179,22 @@ class ChessState{
         std::cout << "lastPawnMove : " << (int)lastPawnMove  << std::endl; // 50 move rule
         std::cout << "numHalfMoves : " << (int)numHalfMoves  << std::endl; // max number of FULL moves is 2 ^ 15 = 32768, parity is who is to move
     }
-    inline Piece getPiece(int indexPosition){
+    inline Piece getPiece(Position indexPosition) const{
         return this->stateArray[indexPosition];
     }
-    inline Piece getPiece(int row, int col){
-        return this->stateArray[col * 8 + row];
+    inline bool isEmptySpot(Position indexPosition) const{
+        return getPiece(indexPosition) == ' ';
     }
-    ~ChessState(){
-        delete[] this->stateArray;
-    } 
+    inline bool isWhitePiece(Position indexPosition) const{
+        return isWhiteColor(getPiece(indexPosition));
+    }
+    inline bool isBlackPiece(Position indexPosition) const{
+        return isBlackColor(getPiece(indexPosition));
+    }
+    inline bool isWhiteToMove() const{
+        return this->numHalfMoves % 2 == 0;
+    }
+    inline Position getEnpassantPosition() const {
+        return this->enpassantMove; 
+    }
 };

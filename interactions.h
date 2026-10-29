@@ -75,6 +75,10 @@ class ChessPlayerInteraction{
         if (!this->hasSelectedSquare) return -1;
         return this->selectedFrom;
     }
+    void resetMove(){
+        this->hasSelectedSquare = false;
+        this->hasCompletedMove = false;
+    }
     void print(){
         std::cout << 
         "topLeftOffset    : " << this->topLeftOffset.x << ","
@@ -84,8 +88,8 @@ class ChessPlayerInteraction{
                               << (int)this->selectedFrom << "\n"
         "selectedTo       : " << getChessPosition(this->selectedTo)  <<"-"
                               <<  (int)this->selectedTo  << "\n"
-        "hasSelectedSquare: " << this->hasSelectedSquare                             << "\n"
-        "hasCompletedMove : " << this->hasCompletedMove                              << "\n"
+        "hasSelectedSquare: " << this->hasSelectedSquare << "\n"
+        "hasCompletedMove : " << this->hasCompletedMove  << "\n"
         << std::endl;
     }
 };

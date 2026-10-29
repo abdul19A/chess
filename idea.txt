@@ -1,0 +1,10 @@
+
+
+so ChessStates is a very simple class, containing all the data, instantanious snapshot of data
+but ChessPosition is an evolving ChessStates class, containing AND modifying data
+
+what should chess position do?
+    store every move for every piece
+    get checks
+    
+I want a class that has states but also has moves

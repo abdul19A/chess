@@ -1,73 +1,111 @@
 #include "textures.h"
 #include "states.h"
 #include "interactions.h"
+#include "position.h"
+#include "debugdefiner.h"
 
+//std::string DEFAULT_GAME_FEN = "8/pppppppp/rnbqkbnr/8/8/RNBQKBNR/PPPPPPPP/8 w KQkq - 0 1";
 std::string DEFAULT_GAME_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 std::string DEFAULT_PIECES_PNG = "resources/chesspieces.png";
 
 class ChessGame{
-  ChessState states;
+  ChessPosition currentPosition;
   ChessTexture texture;
   ChessPlayerInteraction interaction;
-
+  
   Vector2 topLeftOffset;
+  float gridSize;
   public:
-  ChessGame(Vector2 offset, float boardScale)
+  ChessGame(Vector2 offset, float boardScale, std::string FEN = DEFAULT_GAME_FEN)
    : topLeftOffset(offset),
      texture(DEFAULT_PIECES_PNG, boardScale),
-     states(DEFAULT_GAME_FEN),
-     interaction(offset, boardScale){}
+     currentPosition(FEN),
+     interaction(offset, boardScale),
+     gridSize(texture.getGridSize())
+     {}
 
-  void Draw(){
-    const auto& piecesTexture = texture.getAllPiecesTexture();
-    const auto& boardTexture = texture.getBoardTexture();
-    DrawTexture(boardTexture, this->topLeftOffset.x, this->topLeftOffset.y, WHITE);
-    
-    int x, y, order;
-    int gridSize = texture.getGridSize();
-
+  inline Vector2 getGridPosition(Position pos){
+    return Vector2{
+      (pos % 8) * gridSize + this->topLeftOffset.x,
+      (pos / 8) * gridSize + this->topLeftOffset.y
+    };
+  }
+  inline Vector2 getGridCenter(Position pos){
+    return Vector2{
+      (pos % 8) * gridSize + this->topLeftOffset.x + gridSize/2,
+      (pos / 8) * gridSize + this->topLeftOffset.y + gridSize/2
+    };
+  }
+  void DrawSelected(){
+    if (interaction.HasSelectedSquare()){
+      DrawTextureV(texture.getSelectedTexture(), 
+                   getGridPosition(interaction.getHighlightedPosition()), 
+                   WHITE);
+    }
+  }
+  void DrawSpot(){
     if (interaction.HasSelectedSquare()){
       Position highlightedSpot = interaction.getHighlightedPosition();
-      x = (highlightedSpot % 8) * gridSize + this->topLeftOffset.x;
-      y = (highlightedSpot / 8) * gridSize + this->topLeftOffset.y;
-      DrawTexture(texture.getSelectedTexture(), x, y, WHITE);
+      for (Position move: currentPosition.getMoves(highlightedSpot)){
+        DrawTextureV(texture.getSpotTexture(), getGridPosition(move), WHITE);
+      }
     }
+  }
+
+  void DrawMoved(){
     if (interaction.HasCompletedMove()){
       Move doneMove = interaction.getLastMove();
-      x = (doneMove.first % 8) * gridSize + this->topLeftOffset.x;
-      y = (doneMove.first / 8) * gridSize + this->topLeftOffset.y;
-      DrawTexture(texture.getMovedTexture(), x, y, WHITE);
-      x = (doneMove.second % 8) * gridSize + this->topLeftOffset.x;
-      y = (doneMove.second / 8) * gridSize + this->topLeftOffset.y;
-      DrawTexture(texture.getMovedTexture(), x, y, WHITE);
+      DrawTextureV(texture.getMovedTexture(), getGridPosition(doneMove.first), WHITE);
+      DrawTextureV(texture.getMovedTexture(), getGridPosition(doneMove.second), WHITE);
     }
-   
-    
+  }
+  void DrawPieces(){
+    const auto& piecesTexture = texture.getAllPiecesTexture();
+    Vector2 tl;
+    Piece p;
     for (int i = 0; i < 64; i++){
-
-      x = (i % 8) * gridSize + this->topLeftOffset.x;
-      y = (i / 8) * gridSize + this->topLeftOffset.y;
-
-      Piece p = states.getPiece(i);
-      if (p == ' ') continue;
+      p = currentPosition.getPiece(i);
+      if (!isValidPiece(p)) continue;
+      tl = getGridPosition(i);
 
       const PieceAttribute& p_attrib = PiecesAttributes.at(p);
-      const Texture2D pieceTexture = piecesTexture[p_attrib.textureIndex];
+      const Texture2D& pieceTexture = piecesTexture[p_attrib.textureIndex];
+      
+      tl.x += (gridSize - pieceTexture.width)/2;
+      tl.y += (gridSize - pieceTexture.height)/2;
 
-      x += (gridSize - pieceTexture.width)/2;
-      y += (gridSize - pieceTexture.height)/2;
-      DrawTexture(pieceTexture, x, y, WHITE);
+      DrawTextureV(pieceTexture, tl, WHITE);
+
       #ifdef DEBUG_MODE
-        DrawRectangleLines(x, y, pieceTexture.width, pieceTexture.height, RED);
+        DrawRectangleLines(tl.x, tl.y, pieceTexture.width, pieceTexture.height, RED);
       #endif
     }
+  }
+  void DrawBoard(){
+    const auto& boardTexture = texture.getBoardTexture();
+    DrawTexture(boardTexture, this->topLeftOffset.x, this->topLeftOffset.y, WHITE);
+  }
+  void Draw(){
+    // order matters
+    DrawBoard();
+    DrawSelected();
+    DrawMoved();
+    DrawPieces();
+    DrawSpot();
   }
   void update(){
     if (interaction.populatePlayerInput()){
       #ifdef DEBUG_MODE
       std::cout << "return true  ---------------" << std::endl;
       interaction.print();
+      if (interaction.HasSelectedSquare()){
+        currentPosition.print(interaction.getHighlightedPosition());
+      }
+      if (interaction.HasCompletedMove()){
+        Move playerMove = interaction.getLastMove();
       #endif
+      }
+
     }
   } 
 };

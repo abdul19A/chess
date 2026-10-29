@@ -17,6 +17,7 @@ class ChessTexture{
     Texture2D selectedTexture;
     Texture2D movedTexture;
     Texture2D checkTexture;
+    Texture2D spotTexture;
 
     size_t boardSize;
     size_t boardGridSize;
@@ -60,13 +61,13 @@ class ChessTexture{
         Image chessboardImg = GenImagePerlinNoise(boardSize, boardSize, 0, 0, 4.0f);
         Image whiteImg = GenImagePerlinNoise(boardSize, boardSize, boardSize*2, boardSize*2, 4.0f);
 
-        ImageColorBrightness(&chessboardImg, BoardTextureAttrubute::BRIGHTNESS);   
-        ImageBlurGaussian(&chessboardImg, BoardTextureAttrubute::BLUR);  
-        ImageColorTint(&chessboardImg, BoardTextureAttrubute::DARK_COLOR);    
+        ImageColorBrightness(&chessboardImg, BoardTextureAttribute::BRIGHTNESS);   
+        ImageBlurGaussian(&chessboardImg, BoardTextureAttribute::BLUR);  
+        ImageColorTint(&chessboardImg, BoardTextureAttribute::DARK_COLOR);    
 
-        ImageColorBrightness(&whiteImg, BoardTextureAttrubute::BRIGHTNESS);   
-        ImageBlurGaussian(&whiteImg, BoardTextureAttrubute::BLUR);    
-        ImageColorTint(&whiteImg, BoardTextureAttrubute::LIGHT_COLOR);    
+        ImageColorBrightness(&whiteImg, BoardTextureAttribute::BRIGHTNESS);   
+        ImageBlurGaussian(&whiteImg, BoardTextureAttribute::BLUR);    
+        ImageColorTint(&whiteImg, BoardTextureAttribute::LIGHT_COLOR);    
         
         _resizeImage(&chessboardImg, boardSize);
         _resizeImage(&whiteImg, boardSize); 
@@ -89,14 +90,21 @@ class ChessTexture{
         Image movedImage =    GenImageColor(this->boardGridSize, this->boardGridSize, {0x00, 0x10, 0x50, 0x90});   
         Image selectedImage = GenImageColor(this->boardGridSize, this->boardGridSize, {0x10, 0x50, 0x10, 0x90});
         Image checkImage =    GenImageColor(this->boardGridSize, this->boardGridSize, {0x50, 0x10, 0x10, 0x90});
-        
-        this->movedTexture = LoadTextureFromImage(movedImage   );  
+        Image spotImage =     GenImageColor(this->boardGridSize, this->boardGridSize, {0x0, 0x0, 0x0, 0x0});
+
+        ImageDrawCircle(&spotImage,
+             this->boardGridSize/2, this->boardGridSize/2, 
+             this->boardGridSize*SpotTextureAttribute::RAD_FRACTION/2, SpotTextureAttribute::COLOR);
+
+        this->movedTexture =   LoadTextureFromImage(movedImage   );  
         this->selectedTexture= LoadTextureFromImage(selectedImage);  
-        this->checkTexture = LoadTextureFromImage(checkImage   );  
+        this->checkTexture =   LoadTextureFromImage(checkImage   );  
+        this->spotTexture  =   LoadTextureFromImage(spotImage    );  
 
         UnloadImage(movedImage   );
         UnloadImage(selectedImage);
         UnloadImage(checkImage   );
+        UnloadImage(spotImage   );
     }
     public:
     ChessTexture(std::string piecesFilePath, size_t boardSize)
@@ -126,6 +134,10 @@ class ChessTexture{
     const Texture2D& getCheckTexture(){
         if (!isLoaded) throw std::runtime_error("Textures not initialized");
         return this->checkTexture;
+    }
+    const Texture2D& getSpotTexture(){
+        if (!isLoaded) throw std::runtime_error("Textures not initialized");
+        return this->spotTexture;
     }
     const std::array<Texture2D, 12>& getAllPiecesTexture(){
         return this->pieceTextures;
