@@ -19,12 +19,12 @@ class ChessTexture{
     Texture2D checkTexture;
     Texture2D spotTexture;
 
-    size_t boardSize;
-    size_t boardGridSize;
+    float boardSize;
+    float boardGridSize;
 
     bool isLoaded;
 
-    static void _resizeImage(Image* img, size_t scale) {
+    static void _resizeImage(Image* img, float scale) {
         if (img->width > img->height){
             ImageResize(img, scale, static_cast<float>(img->height)/img->width * scale);
         }
@@ -43,7 +43,7 @@ class ChessTexture{
         Piece piece;
         for (int y = 0; y < 2; y++){
             for (int x = 0; x < 6; x++){
-                pieceImg = ImageFromImage(chesspiecesImg, {dx*x,dy*y,dx, dy});
+                pieceImg = ImageFromImage(chesspiecesImg, {dx*x,dy*y, dx, dy});
                 piece = getPieceFromTextureIndex(x+y*6);
 
                 ImageAlphaCrop(&pieceImg, PieceTextureAttribute::ALPHA_MIN);
@@ -87,9 +87,9 @@ class ChessTexture{
         UnloadImage(whiteImg);
     }
     void _createOtherTextures(){
-        Image movedImage =    GenImageColor(this->boardGridSize, this->boardGridSize, {0x00, 0x10, 0x50, 0x90});   
-        Image selectedImage = GenImageColor(this->boardGridSize, this->boardGridSize, {0x10, 0x50, 0x10, 0x90});
-        Image checkImage =    GenImageColor(this->boardGridSize, this->boardGridSize, {0x50, 0x10, 0x10, 0x90});
+        Image movedImage =    GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::MOVED_COLOR   );
+        Image selectedImage = GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::SELECTED_COLOR);
+        Image checkImage =    GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::CHECK_COLOR   );
         Image spotImage =     GenImageColor(this->boardGridSize, this->boardGridSize, {0x0, 0x0, 0x0, 0x0});
 
         ImageDrawCircle(&spotImage,
@@ -107,7 +107,7 @@ class ChessTexture{
         UnloadImage(spotImage   );
     }
     public:
-    ChessTexture(std::string piecesFilePath, size_t boardSize)
+    ChessTexture(std::string piecesFilePath, float boardSize)
      : piecesFilePath(piecesFilePath), boardSize(boardSize){
         this->boardGridSize = this->boardSize/8;
         _readPiecesImage();
@@ -142,7 +142,7 @@ class ChessTexture{
     const std::array<Texture2D, 12>& getAllPiecesTexture(){
         return this->pieceTextures;
     }
-    const size_t getGridSize(){
+    const float getGridSize(){
         return this->boardGridSize;
     }
 

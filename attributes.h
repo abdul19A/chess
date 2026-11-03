@@ -1,13 +1,17 @@
 #pragma once
+
 #include <map>
 #include <set>
 #include <memory>
 #include <string>
 #include <utility>
 #include <raylib.h>
+#include <vector>
+#include <cmath>
 
+#define DEBUG_MODE
 namespace PieceTextureAttribute{
-    const float ALPHA_MIN = 0.5f;
+    const float ALPHA_MIN = 0.1f;
 }
 namespace BoardTextureAttribute{
     const Color DARK_COLOR = {0x41, 0x79, 0x19, 0xFF};
@@ -19,6 +23,12 @@ namespace SpotTextureAttribute{
     const float RAD_FRACTION = 0.5;
     const Color COLOR = {0x70, 0x70, 0x70, 0xFF};
 }
+namespace OtherTexturesAttribute{
+    const Color MOVED_COLOR    = {0xFF, 0x10, 0x10, 0x90};
+    const Color SELECTED_COLOR = {0x10, 0xFF, 0x10, 0x90};
+    const Color CHECK_COLOR    = {0x10, 0x10, 0xFF, 0x90}; 
+
+}
 
 typedef char Piece;
 typedef uint8_t Position;
@@ -26,10 +36,16 @@ typedef std::pair<Position, Position> Move;
 typedef std::pair<Position, std::set<Position>> Moves; 
 
 const Position INVALID_POS = 0xFF;
-const Position QUEEN_PROMOTION =  0b01'000000;
-const Position ROOK_PROMOTION =   0b10'000000;
-const Position BISHOP_PROMOTION = 0b11'000000;
-const Position KNIGHT_PROMOTION = 0b00'000000;
+
+namespace Promote{
+    enum choice{
+        none,
+        queen,
+        rook,
+        bishop,
+        knight
+    };
+}
 
 inline bool isValidPositionString(std::string s){
     // checks if a position string (like a8) is valid
@@ -61,14 +77,14 @@ struct PieceAttribute{
 const std::string PieceTextureOrder = "rbqknpRBQKNP";
 const std::map<Piece, PieceAttribute> PiecesAttributes
 {
-  {'r', {-5    , 0 , 0.90f}},
-  {'b', {-3    , 1 , 0.90f}},
+  {'r', {-5    , 0 , 0.80f}},
+  {'b', {-3    , 1 , 0.85f}},
   {'q', {-8    , 2 , 0.90f}},
   {'k', {-32768, 3 , 0.90f}},
   {'n', {-3    , 4 , 0.85f}},
   {'p', {-1    , 5 , 0.80f}},
-  {'R', {5     , 6 , 0.90f}},
-  {'B', {3     , 7 , 0.90f}},
+  {'R', {5     , 6 , 0.80f}},
+  {'B', {3     , 7 , 0.85f}},
   {'Q', {8     , 8 , 0.90f}},
   {'K', {32767 , 9 , 0.90f}},
   {'N', {3     , 10, 0.85f}},
@@ -104,4 +120,7 @@ inline Piece getPieceFromTextureIndex(int index){
 inline Piece getUncoloredPiece(Piece c){
     if (c >= 'A' && c <= 'Z') return c + ('a' - 'A');
     return c;
+}
+inline Position getPosition(Position x, Position y){
+    return y * 8 + x;
 }

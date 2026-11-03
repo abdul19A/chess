@@ -7,7 +7,7 @@ CFLAGS = -O2
 CC = g++
 LIBS =-lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 SRCS = main.cpp
-HDRS = game.h states.h textures.h attributes.h interactions.h stateView.h
+HDRS = game.h states.h textures.h attributes.h interactions.h position.h
 
 debug: build/debug
 release: build/release
@@ -30,11 +30,9 @@ build/test: testing.cpp $(HDRS)
 	$(CC) $(CFLAGS) testing.cpp -o build/test $(LIBS)
 
 run_debug: build/debug main.cpp $(HDRS)
-	echo "#define DEBUG_MODE" > debugdefiner.h
 	./build/debug
 
 run_release: build/release main.cpp $(HDRS)
-	echo "" > debugdefiner.h
 	./build/release
 
 run_test: build/test testing.cpp $(HDRS)

@@ -162,8 +162,16 @@ class ChessState{
         this->castlingMove = other.castlingMove;
         this->lastPawnMove = other.lastPawnMove;
     }
-    
-    void print() const{
+    ChessState& operator=(const ChessState& other){
+        if (this == &other) return *this;
+        for (int i = 0; i < 64; i++) this->stateArray[i] = other.stateArray[i];
+        this->numHalfMoves =  other.numHalfMoves;
+        this->enpassantMove = other.enpassantMove;
+        this->castlingMove =  other.castlingMove;
+        this->lastPawnMove =  other.lastPawnMove;
+        return *this;
+    }
+    void printRawBoard(){
         for (int j = 0; j < 8; j++){
             for (int i = 0; i < 8; i++) std::cout << "+--";
             std::cout << "+" << std::endl;
@@ -174,10 +182,15 @@ class ChessState{
         }
         for (int i = 0; i < 8; i++) std::cout << "+--";
         std::cout << "+" << std::endl;;
-        std::cout << "enpassantMove: " << getChessPosition(enpassantMove) << std::endl; // position behind enpassantable pawn (0-64)
-        std::cout << " castlingMove: " << std::bitset<4>{castlingMove} << std::endl; // who can castle 0000
-        std::cout << "lastPawnMove : " << (int)lastPawnMove  << std::endl; // 50 move rule
-        std::cout << "numHalfMoves : " << (int)numHalfMoves  << std::endl; // max number of FULL moves is 2 ^ 15 = 32768, parity is who is to move
+    }
+    void print() const{
+        //printRawBoard();
+        std::cout 
+        << "enpassantMove: " << getChessPosition(enpassantMove) << '\n'// position behind enpassantable pawn (0-64)
+        << " castlingMove: " << std::bitset<4>{castlingMove} << '\n' // who can castle 0000
+        << "lastPawnMove : " << (int)lastPawnMove << '\n'// 50 move rule
+        << "numHalfMoves : " << (int)numHalfMoves << '\n' // max number of FULL moves is 2 ^ 15 = 32768, parity is who is to move
+        << std::endl;
     }
     inline Piece getPiece(Position indexPosition) const{
         return this->stateArray[indexPosition];
@@ -194,7 +207,59 @@ class ChessState{
     inline bool isWhiteToMove() const{
         return this->numHalfMoves % 2 == 0;
     }
+    inline bool isPieceToMove(Position indexPosition) const{
+        return (isWhiteToMove() && isWhitePiece(indexPosition)) || (!isWhiteToMove() && isBlackPiece(indexPosition));
+    }
+    inline bool canCastleQueenside(bool isWhite) const{
+        if (isWhite) return castlingMove & 0b0010;
+        else return castlingMove & 0b1000;
+    }
+    inline bool canCastleKingside(bool isWhite) const{
+        if (isWhite) return castlingMove & 0b0001;
+        else return castlingMove & 0b0100;
+    }
     inline Position getEnpassantPosition() const {
         return this->enpassantMove; 
+    }
+    protected:
+    inline void clearEnpassantPosition() {
+        this->enpassantMove = INVALID_POS; 
+    }
+    inline void setEnpassantPosition(Position newPos) {
+        this->enpassantMove = newPos; 
+    }
+    inline void incrementHalfMove() {
+        this->numHalfMoves++;
+    }
+    inline void incrementLastPawnMove(){
+        this->lastPawnMove++;
+    }
+    inline void resetLastPawnMove(){
+        this->lastPawnMove = 0;
+    }
+    inline void disableQueensideCastle(bool isWhite){
+        if (isWhite) castlingMove &= 0b1101;
+        else castlingMove &= 0b0111;
+    }
+    inline void disableKingsideCastle(bool isWhite){
+        if (isWhite) castlingMove &= 0b1110;
+        else castlingMove &= 0b1011;
+    }
+    inline void killPiece(Position pos){
+        this->stateArray[pos] = ' ';
+    }
+    inline void MovePieceRaw(Position from, Position to){
+        this->stateArray[to] = this->stateArray[from];
+        this->stateArray[from] = ' ';
+    }
+    inline void PromotePiece(Position from, Position to, Promote::choice choice){
+        this->stateArray[from] = ' ';
+        switch(choice){
+            case Promote::queen:  this->stateArray[to] = isWhitePiece(from)? 'Q':'q'; return;
+            case Promote::rook:   this->stateArray[to] = isWhitePiece(from)? 'R':'r'; return;
+            case Promote::bishop: this->stateArray[to] = isWhitePiece(from)? 'B':'b'; return;
+            case Promote::knight: this->stateArray[to] = isWhitePiece(from)? 'N':'n'; return;
+            default: throw std::runtime_error("Invalid Promotion Choice");
+        }
     }
 };

@@ -2,9 +2,7 @@
 #include "states.h"
 #include "interactions.h"
 #include "position.h"
-#include "debugdefiner.h"
 
-//std::string DEFAULT_GAME_FEN = "8/pppppppp/rnbqkbnr/8/8/RNBQKBNR/PPPPPPPP/8 w KQkq - 0 1";
 std::string DEFAULT_GAME_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 std::string DEFAULT_PIECES_PNG = "resources/chesspieces.png";
 
@@ -23,7 +21,7 @@ class ChessGame{
      interaction(offset, boardScale),
      gridSize(texture.getGridSize())
      {}
-
+  private:
   inline Vector2 getGridPosition(Position pos){
     return Vector2{
       (pos % 8) * gridSize + this->topLeftOffset.x,
@@ -51,7 +49,6 @@ class ChessGame{
       }
     }
   }
-
   void DrawMoved(){
     if (interaction.HasCompletedMove()){
       Move doneMove = interaction.getLastMove();
@@ -66,6 +63,7 @@ class ChessGame{
     for (int i = 0; i < 64; i++){
       p = currentPosition.getPiece(i);
       if (!isValidPiece(p)) continue;
+
       tl = getGridPosition(i);
 
       const PieceAttribute& p_attrib = PiecesAttributes.at(p);
@@ -74,7 +72,8 @@ class ChessGame{
       tl.x += (gridSize - pieceTexture.width)/2;
       tl.y += (gridSize - pieceTexture.height)/2;
 
-      DrawTextureV(pieceTexture, tl, WHITE);
+      //DrawTextureV(pieceTexture, tl, WHITE); <- weird clipping behavior due to float size
+      DrawTextureV(pieceTexture, {std::floor(tl.x), std::floor(tl.y)}, WHITE);
 
       #ifdef DEBUG_MODE
         DrawRectangleLines(tl.x, tl.y, pieceTexture.width, pieceTexture.height, RED);
@@ -85,6 +84,7 @@ class ChessGame{
     const auto& boardTexture = texture.getBoardTexture();
     DrawTexture(boardTexture, this->topLeftOffset.x, this->topLeftOffset.y, WHITE);
   }
+  public:
   void Draw(){
     // order matters
     DrawBoard();
@@ -94,18 +94,27 @@ class ChessGame{
     DrawSpot();
   }
   void update(){
+    if (interaction.HasCompletedMove()){
+      Move move = interaction.getLastMove();
+      if (currentPosition.update(move.first, move.second)){
+        // add it to some list or something
+      }
+      else {
+        interaction.resetMove();
+      }
+    }
     if (interaction.populatePlayerInput()){
       #ifdef DEBUG_MODE
-      std::cout << "return true  ---------------" << std::endl;
-      interaction.print();
+      std::cout << "---------------" << std::endl;
+      //interaction.print();
       if (interaction.HasSelectedSquare()){
         currentPosition.print(interaction.getHighlightedPosition());
       }
       if (interaction.HasCompletedMove()){
         Move playerMove = interaction.getLastMove();
-      #endif
       }
-
+      #endif
     }
+    
   } 
 };

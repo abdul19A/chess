@@ -5,3 +5,5 @@ rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3
 rnbq1bnr/ppp1pkpp/8/3pPp2/8/5N2/PPPPKPPP/RNBQ1B1R b - - 3 4
 rnbq1bn1/ppp1pk1r/7p/3pPppP/8/5N2/PPPPKPP1/RNBQ1B1R w - g6 0 7
+rnbqk2r/p1pp1pp1/1pNn4/2b4p/3Pp3/1QP2N2/PP2B2P/R1B1K2R w KQq - 0 19
+rn1q1b1r/pp1bkB1p/1n3pp1/1Pp1p3/8/BQ2P3/P2P1PPP/RN2K1NR w KQ c6 0 11
