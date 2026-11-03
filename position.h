@@ -23,6 +23,7 @@ class ChessPosition : public ChessState{
         this->PossibleMoves = other.PossibleMoves;
         this->BlackKingPosition = other.BlackKingPosition;
         this->WhiteKingPosition = other.WhiteKingPosition;
+        this->toMoveIsChecked = other.toMoveIsChecked;
     }
     
     ChessPosition& operator=(const ChessPosition& other){
@@ -31,12 +32,14 @@ class ChessPosition : public ChessState{
         this->PossibleMoves = other.PossibleMoves;
         this->BlackKingPosition = other.BlackKingPosition;
         this->WhiteKingPosition = other.WhiteKingPosition;
+        this->toMoveIsChecked = other.toMoveIsChecked;
         return *this;
     }
     void PopulateMoves(){
         PossibleMoves.clear();
         this->BlackKingPosition = INVALID_POS;
         this->WhiteKingPosition = INVALID_POS;
+        this->toMoveIsChecked = false;
         for (Position pos = 0; pos < 64; pos++){
             if (isValidPiece(getPiece(pos)))
                 populatePieceMoves(pos);
@@ -46,13 +49,6 @@ class ChessPosition : public ChessState{
         return PossibleMoves[pos];
     }
     private:
-    inline Position move(Position from, int dx, int dy) const{
-        int x = dx + (from % 8);
-        if (x >= 8 || x < 0) return INVALID_POS;
-        int y = dy + (from / 8);
-        if (y >= 8 || y < 0) return INVALID_POS;
-        return static_cast<int>(x + y * 8);
-    }
     inline int getRelativeRow(Position from) const{
         if (isWhitePiece(from)){
             return 7 - getRow(from);
@@ -79,7 +75,7 @@ class ChessPosition : public ChessState{
         Piece toPiece;
         Position curSquare;
         for (int i = 1; i < 8; i++){
-            curSquare = move(from, dx*i, dy*i);
+            curSquare = movePosition(from, dx*i, dy*i);
             toPiece = getPiece(curSquare);
             if (!isValidPosition(curSquare) || isSameColor(fromPiece, toPiece)) return;
             PossibleMoves[from].emplace(curSquare); // its empty or black so add it
@@ -97,8 +93,8 @@ class ChessPosition : public ChessState{
         int row = getRow(pawnPos), col = getCol(pawnPos);
 
         if      (relRow == 1 // double-forward
-                 && isEmptySpot(move(pawnPos, 0, dy))){ // next piece must be open
-            addIfEmpty(pawnPos, move(pawnPos, 0, dy+dy)); // add if 2 forward is open
+                 && isEmptySpot(movePosition(pawnPos, 0, dy))){ // next piece must be open
+            addIfEmpty(pawnPos, movePosition(pawnPos, 0, dy+dy)); // add if 2 forward is open
         }
         else if (relRow == 4 // enpassant
                  && isValidPosition(getEnpassantPosition())
@@ -107,9 +103,9 @@ class ChessPosition : public ChessState{
                 ){ // must be 1 left or 1 right
             PossibleMoves[pawnPos].emplace(getEnpassantPosition());
         }
-        addIfEmpty   (pawnPos, move(pawnPos,   0, dy)); 
-        addIfOpposite(pawnPos, move(pawnPos,  dx, dy));
-        addIfOpposite(pawnPos, move(pawnPos, -dx, dy));
+        addIfEmpty   (pawnPos, movePosition(pawnPos,   0, dy)); 
+        addIfOpposite(pawnPos, movePosition(pawnPos,  dx, dy));
+        addIfOpposite(pawnPos, movePosition(pawnPos, -dx, dy));
     }
     void populateRookMoves  (Position rookPos){
         for (int i = -1; i <= 1; i+=2){
@@ -137,15 +133,15 @@ class ChessPosition : public ChessState{
         for (int i = -1; i <= 1; i++){
             for (int j = -1; j <= 1; j++){
                 if (i == 0 && j == 0) continue;
-                addIfOppositeOrEmpty(kingPos, move(kingPos, i, j));
+                addIfOppositeOrEmpty(kingPos, movePosition(kingPos, i, j));
             }
         }
         bool isWhite = isWhitePiece(kingPos);
-        if (canCastleKingside(isWhite) && isEmptySpot(move(kingPos, 1, 0))){
-            addIfEmpty(kingPos, move(kingPos, 2, 0));
+        if (canCastleKingside(isWhite) && isEmptySpot(movePosition(kingPos, 1, 0))){
+            addIfEmpty(kingPos, movePosition(kingPos, 2, 0));
         }
-        else if (canCastleQueenside(isWhite) && isEmptySpot(move(kingPos, -1, 0)) && isEmptySpot(move(kingPos, -3, 0))){
-            addIfEmpty(kingPos, move(kingPos, -2, 0));
+        else if (canCastleQueenside(isWhite) && isEmptySpot(movePosition(kingPos, -1, 0)) && isEmptySpot(movePosition(kingPos, -3, 0))){
+            addIfEmpty(kingPos, movePosition(kingPos, -2, 0));
         }
         if (isWhite) this->WhiteKingPosition = kingPos;
         else this->BlackKingPosition = kingPos;
@@ -153,8 +149,8 @@ class ChessPosition : public ChessState{
     void populateKnightMoves(Position knightPos){
         for (int i = -1; i <= 1; i+=2){
             for (int j = -1; j <= 1; j+=2){
-                addIfOppositeOrEmpty(knightPos, move(knightPos, i*2, j));
-                addIfOppositeOrEmpty(knightPos, move(knightPos, i, j*2));
+                addIfOppositeOrEmpty(knightPos, movePosition(knightPos, i*2, j));
+                addIfOppositeOrEmpty(knightPos, movePosition(knightPos, i, j*2));
             }
         }
     }
@@ -188,8 +184,8 @@ class ChessPosition : public ChessState{
         std::set<Position>& moves = this->PossibleMoves[kingPos];
         // check kingside
         for (int i = -1; i <= 1; i+=2){
-            Position adjacentMove = move(kingPos, 1*i, 0);
-            Position castlingMove = move(kingPos, 2*i, 0);
+            Position adjacentMove = movePosition(kingPos, 1*i, 0);
+            Position castlingMove = movePosition(kingPos, 2*i, 0);
             if (moves.find(castlingMove) == moves.end()) continue; // no castling so skip
             else if ( (moves.find(adjacentMove) == moves.end()) // in between covered
                    || (this->toMoveIsChecked) // cant castle if checked
@@ -210,7 +206,7 @@ class ChessPosition : public ChessState{
                 continue;
             }
             for (Position moveTo: movePair.second){
-                if (getNextPosition(movePair.first, moveTo).isInCheck(color)){ // if this move causes a check in the next turn
+                if (getNextPosition(movePair.first, moveTo, Promotion::none).isInCheck(color)){ // if this move causes a check in the next turn
                     toRemove[movePair.first].emplace(moveTo);
                 }
             }
@@ -227,7 +223,7 @@ class ChessPosition : public ChessState{
             }
         }
     }
-    ChessPosition getNextPosition(Position from, Position to) const{
+    ChessPosition getNextPosition(Position from, Position to, Promotion::choice choice) const{
         ChessPosition nextPosition(*this);
 
         Piece pieceFrom = getPiece(from);
@@ -246,10 +242,13 @@ class ChessPosition : public ChessState{
         // start playing move
         if (pieceType == 'p'){
             if (to == getEnpassantPosition()){ // take enpassant
-                nextPosition.killPiece(move(to, 0, pieceIsWhite? 1: -1)); // the only usage of deleting a piece
+                nextPosition.killPiece(movePosition(to, 0, pieceIsWhite? 1: -1)); // the only usage of deleting a piece
             }
             else if (rowTo-rowFrom == dy+dy){ // double move
                 addNewEnpassantPosition = true;
+            }
+            else if (relRowFrom == 6 && choice != Promotion::none){ // promotion move, also let the filter skip over this
+                nextPosition.PromotePiece(from, to, choice);
             }
             nextPosition.resetLastPawnMove();
         }
@@ -280,9 +279,9 @@ class ChessPosition : public ChessState{
         nextPosition.clearEnpassantPosition();// reset after each move as you can only enpassant as soon as you get the opportunity
 
         if (addNewEnpassantPosition)
-            nextPosition.setEnpassantPosition(move(from, 0, dy));
-
-        nextPosition.MovePieceRaw(from, to);
+            nextPosition.setEnpassantPosition(movePosition(from, 0, dy));
+        if (choice == Promotion::none) // we already moved the promoted pawn
+            nextPosition.MovePieceRaw(from, to);
         nextPosition.incrementHalfMove();
         nextPosition.PopulateMoves();
         return nextPosition;
@@ -291,7 +290,7 @@ class ChessPosition : public ChessState{
     bool getIsInCheck() const{
         return this->toMoveIsChecked;
     }
-    Position getKing() const{
+    Position getKingPosition() const{
         return isWhiteToMove()? this->WhiteKingPosition: this->BlackKingPosition; 
     }
     std::string MovesToStr(Position pos) const{
@@ -322,15 +321,34 @@ class ChessPosition : public ChessState{
         << "enpassant    :" << getChessPosition(getEnpassantPosition()) << '\n'
         << "toMove       :" << (isWhiteToMove() ? "White": "Black") << '\n';
     }
-    bool update(Position from, Position to){
-        if ((PossibleMoves.find(from) == PossibleMoves.end()) ||
-            (PossibleMoves[from].find(to) == PossibleMoves[from].end())) return false;
+    bool isValidMove(Position from, Position to){
+        return ((PossibleMoves.find(from)     != PossibleMoves.end()) &&
+                (PossibleMoves[from].find(to) != PossibleMoves[from].end()));
+    }
+    inline bool isPromotionMove(Position from, Position to){
+        return getUncoloredPiece(getPiece(from)) == 'p' && getRelativeRow(from) == 6;
+    }
+    Promotion::choice getPromotion(Position selectedSquare, Position to){
+        if (getCol(selectedSquare) != getCol(to)) return Promotion::none;
+        
+        int row = getRow(selectedSquare);
+        if (isWhiteToMove()){
+            row = 7 - row;
+        }
+        if (row < 4 || row > 7) return Promotion::none;
+        int dy = 7 - row;
+        return (Promotion::choice)(dy + 1); // quicker
+        // 7 -> queen, 6 -> knight, 5 -> rook, 4->bishop
+    }
+    void update(Position from, Position to, Promotion::choice possiblePromotion = Promotion::none){
         std::ostringstream moveOss;
-        *this = getNextPosition(from, to);
+        *this = getNextPosition(from, to, possiblePromotion);
         this->toMoveIsChecked = isInCheck(isWhiteToMove());
         filterInvalidMoves();
         filterInvalidCastling();
-        return true;
+    }
+    bool isGameOver(){
+        return (getLastPawnMove() >= 50 || this->PossibleMoves.size() == 0);
     }
 
 };

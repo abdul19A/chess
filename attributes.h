@@ -11,7 +11,7 @@
 
 #define DEBUG_MODE
 namespace PieceTextureAttribute{
-    const float ALPHA_MIN = 0.1f;
+    const float ALPHA_MIN = 0.4f;
 }
 namespace BoardTextureAttribute{
     const Color DARK_COLOR = {0x41, 0x79, 0x19, 0xFF};
@@ -24,10 +24,10 @@ namespace SpotTextureAttribute{
     const Color COLOR = {0x70, 0x70, 0x70, 0xFF};
 }
 namespace OtherTexturesAttribute{
-    const Color MOVED_COLOR    = {0xFF, 0x10, 0x10, 0x90};
-    const Color SELECTED_COLOR = {0x10, 0xFF, 0x10, 0x90};
-    const Color CHECK_COLOR    = {0x10, 0x10, 0xFF, 0x90}; 
-
+    const Color MOVED_COLOR     = {0xFF, 0xFF, 0x10, 0x70};
+    const Color SELECTED_COLOR  = {0x10, 0xFF, 0xFF, 0x60};
+    const Color CHECK_COLOR     = {0xFF, 0x10, 0x10, 0x60}; 
+    const Color PROMOTION_COLOR = {0xEF, 0xFE, 0xEE, 0x5F};
 }
 
 typedef char Piece;
@@ -35,16 +35,18 @@ typedef uint8_t Position;
 typedef std::pair<Position, Position> Move;
 typedef std::pair<Position, std::set<Position>> Moves; 
 
+const int UPPERCASE_CONSTANT = 'A' - 'a';
 const Position INVALID_POS = 0xFF;
-
-namespace Promote{
+const Move INVALID_MOVE = Move(INVALID_POS, INVALID_POS);
+namespace Promotion{
     enum choice{
         none,
         queen,
+        knight,
         rook,
-        bishop,
-        knight
+        bishop
     };
+    std::vector<Piece> order = {'q','n','r','b'};
 }
 
 inline bool isValidPositionString(std::string s){
@@ -67,7 +69,13 @@ inline std::string getChessPosition(Position p){
     s[1] = '1' + (7-(p / 8));
     return s;
 }
-
+inline Position movePosition(Position from, int dx, int dy) {
+    int x = dx + (from % 8);
+    if (x >= 8 || x < 0) return INVALID_POS;
+    int y = dy + (from / 8);
+    if (y >= 8 || y < 0) return INVALID_POS;
+    return static_cast<int>(x + y * 8);
+}
 struct PieceAttribute{
     short value;
     unsigned int textureIndex;
@@ -113,6 +121,9 @@ inline bool isWhiteColor(Piece p){
 }
 inline bool isBlackColor(Piece p){
     return 'a' < p && 'z' > p;
+}
+inline Piece uncoloredToWhite(Piece p){
+    return p + UPPERCASE_CONSTANT;
 }
 inline Piece getPieceFromTextureIndex(int index){
     return PieceTextureOrder[index];

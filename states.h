@@ -3,14 +3,14 @@
 #include <sstream>
 #include <bitset>
 #include <iostream>
-
+#include <array>
 #include "attributes.h"
 
 
 class ChessState{
     // class for storing chess states
     private:
-    Piece stateArray[64]; // a8 = 0 h1 = 63
+    std::array<Piece, 64> stateArray; // a8 = 0 h1 = 63
     uint16_t numHalfMoves; // max number of FULL moves is 2 ^ 15 = 32768, parity decides who to move
     Position enpassantMove; // position behind enpassantable pawn (0-64)
     uint8_t castlingMove; // who can castle 0000
@@ -221,6 +221,9 @@ class ChessState{
     inline Position getEnpassantPosition() const {
         return this->enpassantMove; 
     }
+    inline int getLastPawnMove() const{
+        return this->lastPawnMove;
+    }
     protected:
     inline void clearEnpassantPosition() {
         this->enpassantMove = INVALID_POS; 
@@ -252,14 +255,14 @@ class ChessState{
         this->stateArray[to] = this->stateArray[from];
         this->stateArray[from] = ' ';
     }
-    inline void PromotePiece(Position from, Position to, Promote::choice choice){
-        this->stateArray[from] = ' ';
+    inline void PromotePiece(Position from, Position to, Promotion::choice choice){
         switch(choice){
-            case Promote::queen:  this->stateArray[to] = isWhitePiece(from)? 'Q':'q'; return;
-            case Promote::rook:   this->stateArray[to] = isWhitePiece(from)? 'R':'r'; return;
-            case Promote::bishop: this->stateArray[to] = isWhitePiece(from)? 'B':'b'; return;
-            case Promote::knight: this->stateArray[to] = isWhitePiece(from)? 'N':'n'; return;
+            case Promotion::queen:  this->stateArray[to] = isWhitePiece(from)? 'Q':'q'; break;
+            case Promotion::rook:   this->stateArray[to] = isWhitePiece(from)? 'R':'r'; break;
+            case Promotion::bishop: this->stateArray[to] = isWhitePiece(from)? 'B':'b'; break;
+            case Promotion::knight: this->stateArray[to] = isWhitePiece(from)? 'N':'n'; break;
             default: throw std::runtime_error("Invalid Promotion Choice");
         }
+        this->stateArray[from] = ' ';
     }
 };

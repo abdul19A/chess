@@ -10,6 +10,7 @@ class ChessPlayerInteraction{
     
     Position selectedFrom;
     Position selectedTo;
+    Position promotionSelection;
 
     bool hasSelectedSquare;
     bool hasCompletedMove;
@@ -20,6 +21,8 @@ class ChessPlayerInteraction{
     : topLeftOffset(topLeftOffset), boardSize(boardSize) {
         this->selectedFrom = -1;
         this->selectedTo = -1;
+        this->promotionSelection = -1;
+
         this->hasSelectedSquare = false;
         this->hasCompletedMove = false;
         this->mouseIsDownPreviously = false;
@@ -59,6 +62,9 @@ class ChessPlayerInteraction{
             this->hasCompletedMove = false;
         }
         this->hasSelectedSquare = !this->hasSelectedSquare;
+        return true;
+    }
+    bool promptPromotion(int row, bool isWhite){
         return true;
     }
     bool HasSelectedSquare(){

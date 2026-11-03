@@ -5,6 +5,7 @@ int main(){
     ChessState cs(s);
     std::cout << s << std::endl;
     std::cout << cs.getFEN() << std::endl;
+    std::cout << sizeof(cs) << std::endl;
     cs.print();
     return 0;
 }

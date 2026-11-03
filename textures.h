@@ -18,7 +18,8 @@ class ChessTexture{
     Texture2D movedTexture;
     Texture2D checkTexture;
     Texture2D spotTexture;
-
+    Texture2D promotionTexture;
+    
     float boardSize;
     float boardGridSize;
 
@@ -87,24 +88,28 @@ class ChessTexture{
         UnloadImage(whiteImg);
     }
     void _createOtherTextures(){
-        Image movedImage =    GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::MOVED_COLOR   );
-        Image selectedImage = GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::SELECTED_COLOR);
-        Image checkImage =    GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::CHECK_COLOR   );
-        Image spotImage =     GenImageColor(this->boardGridSize, this->boardGridSize, {0x0, 0x0, 0x0, 0x0});
-
+        Image movedImage =     GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::MOVED_COLOR   );
+        Image selectedImage =  GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::SELECTED_COLOR);
+        Image checkImage =     GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::CHECK_COLOR   );
+        Image spotImage =      GenImageColor(this->boardGridSize, this->boardGridSize, {0x0, 0x0, 0x0, 0x0});
+        Image promotionImage = GenImageColor(this->boardGridSize, this->boardGridSize*4, OtherTexturesAttribute::PROMOTION_COLOR);
+        
+        // draw circle spot
         ImageDrawCircle(&spotImage,
              this->boardGridSize/2, this->boardGridSize/2, 
              this->boardGridSize*SpotTextureAttribute::RAD_FRACTION/2, SpotTextureAttribute::COLOR);
 
-        this->movedTexture =   LoadTextureFromImage(movedImage   );  
-        this->selectedTexture= LoadTextureFromImage(selectedImage);  
-        this->checkTexture =   LoadTextureFromImage(checkImage   );  
-        this->spotTexture  =   LoadTextureFromImage(spotImage    );  
+        this->movedTexture     = LoadTextureFromImage(movedImage    );  
+        this->selectedTexture  = LoadTextureFromImage(selectedImage );  
+        this->checkTexture     = LoadTextureFromImage(checkImage    );  
+        this->spotTexture      = LoadTextureFromImage(spotImage     );  
+        this->promotionTexture = LoadTextureFromImage(promotionImage);
 
-        UnloadImage(movedImage   );
-        UnloadImage(selectedImage);
-        UnloadImage(checkImage   );
-        UnloadImage(spotImage   );
+        UnloadImage(movedImage    );
+        UnloadImage(selectedImage );
+        UnloadImage(checkImage    );
+        UnloadImage(spotImage     );
+        UnloadImage(promotionImage);
     }
     public:
     ChessTexture(std::string piecesFilePath, float boardSize)
@@ -116,28 +121,28 @@ class ChessTexture{
         this->isLoaded = true;
     }
     const Texture2D& getPieceTexture(int i){
-        if (!isLoaded) throw std::runtime_error("Textures not initialized");
         return this->pieceTextures[i];
     }
+    const Texture2D& getPieceTexture(Piece p){
+        return this->pieceTextures[PiecesAttributes.at(p).textureIndex];
+    }
     const Texture2D& getBoardTexture(){
-        if (!isLoaded) throw std::runtime_error("Textures not initialized");
         return this->boardTexture;
     }
     const Texture2D& getSelectedTexture(){
-        if (!isLoaded) throw std::runtime_error("Textures not initialized");
         return this->selectedTexture;
     }
     const Texture2D& getMovedTexture(){
-        if (!isLoaded) throw std::runtime_error("Textures not initialized");
         return this->movedTexture;
     }
     const Texture2D& getCheckTexture(){
-        if (!isLoaded) throw std::runtime_error("Textures not initialized");
         return this->checkTexture;
     }
     const Texture2D& getSpotTexture(){
-        if (!isLoaded) throw std::runtime_error("Textures not initialized");
         return this->spotTexture;
+    }
+    const Texture2D& getPromotionTexture(){
+        return this->promotionTexture;
     }
     const std::array<Texture2D, 12>& getAllPiecesTexture(){
         return this->pieceTextures;

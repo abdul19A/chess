@@ -13,13 +13,20 @@ class ChessGame{
   
   Vector2 topLeftOffset;
   float gridSize;
+  Move lastMove;
+  bool isPromptingPromotion;
+  Move promotionMove;
+
   public:
   ChessGame(Vector2 offset, float boardScale, std::string FEN = DEFAULT_GAME_FEN)
    : topLeftOffset(offset),
      texture(DEFAULT_PIECES_PNG, boardScale),
      currentPosition(FEN),
      interaction(offset, boardScale),
-     gridSize(texture.getGridSize())
+     gridSize(texture.getGridSize()),
+     lastMove(INVALID_MOVE),
+     isPromptingPromotion(false),
+     promotionMove(INVALID_MOVE)
      {}
   private:
   inline Vector2 getGridPosition(Position pos){
@@ -50,11 +57,28 @@ class ChessGame{
     }
   }
   void DrawMoved(){
-    if (interaction.HasCompletedMove()){
-      Move doneMove = interaction.getLastMove();
-      DrawTextureV(texture.getMovedTexture(), getGridPosition(doneMove.first), WHITE);
-      DrawTextureV(texture.getMovedTexture(), getGridPosition(doneMove.second), WHITE);
+    if (lastMove != INVALID_MOVE){
+      DrawTextureV(texture.getMovedTexture(), getGridPosition(lastMove.first), WHITE);
+      DrawTextureV(texture.getMovedTexture(), getGridPosition(lastMove.second), WHITE);
     }
+  }
+  void DrawCheck(){
+    if (currentPosition.getIsInCheck()){
+      DrawTextureV(texture.getCheckTexture(), getGridPosition(currentPosition.getKingPosition()), WHITE);
+    }
+  }
+  void DrawPiece(Piece piece, Position pos){
+    const auto& pieceTexture = texture.getPieceTexture(piece);
+    Vector2 tl = getGridPosition(pos);
+    const PieceAttribute& p_attrib = PiecesAttributes.at(piece);
+    tl.x += (gridSize - pieceTexture.width)/2;
+    tl.y += (gridSize - pieceTexture.height)/2;
+    //DrawTextureV(pieceTexture, tl, WHITE); <- weird clipping behavior due to float size
+    DrawTextureV(pieceTexture, {std::floor(tl.x), std::floor(tl.y)}, WHITE);
+
+    #ifdef DEBUG_MODE
+      DrawRectangleLines(tl.x, tl.y, pieceTexture.width, pieceTexture.height, RED);
+    #endif
   }
   void DrawPieces(){
     const auto& piecesTexture = texture.getAllPiecesTexture();
@@ -84,25 +108,42 @@ class ChessGame{
     const auto& boardTexture = texture.getBoardTexture();
     DrawTexture(boardTexture, this->topLeftOffset.x, this->topLeftOffset.y, WHITE);
   }
+  void DrawPromotion(){
+    if (this->isPromptingPromotion){
+      int i = 0;
+      if (currentPosition.isWhiteToMove()){
+        DrawTextureV(texture.getPromotionTexture(), getGridPosition(this->promotionMove.second), WHITE);
+        for (Piece p: Promotion::order) DrawPiece(uncoloredToWhite(p), movePosition(this->promotionMove.second, 0, i++));
+      }
+      else {
+        DrawTextureV(texture.getPromotionTexture(), getGridPosition(movePosition(this->promotionMove.second, 0, -4)), WHITE);
+        for (Piece p: Promotion::order) DrawPiece(p, movePosition(this->promotionMove.second, 0, i--));
+      }
+    }
+  } 
+  bool promptPromotion(Move playedMove){ 
+    if (currentPosition.isPromotionMove(playedMove.first, playedMove.second)){
+      this->isPromptingPromotion = true;
+      this->promotionMove = playedMove;
+      return false;
+    }
+    else {
+      return true;
+    }
+  }
   public:
   void Draw(){
     // order matters
     DrawBoard();
     DrawSelected();
     DrawMoved();
+    DrawCheck();
     DrawPieces();
     DrawSpot();
+    DrawPromotion();
   }
+  
   void update(){
-    if (interaction.HasCompletedMove()){
-      Move move = interaction.getLastMove();
-      if (currentPosition.update(move.first, move.second)){
-        // add it to some list or something
-      }
-      else {
-        interaction.resetMove();
-      }
-    }
     if (interaction.populatePlayerInput()){
       #ifdef DEBUG_MODE
       std::cout << "---------------" << std::endl;
@@ -115,6 +156,35 @@ class ChessGame{
       }
       #endif
     }
-    
+    // handle selecting option for promotion
+    if (interaction.HasSelectedSquare() && this->isPromptingPromotion){
+      Position selectedSquare = interaction.getHighlightedPosition();
+      Promotion::choice chosen = currentPosition.getPromotion(selectedSquare, this->promotionMove.second);
+      
+      if (chosen == Promotion::none){
+        // we did not play this move so let the player pick another one
+        interaction.resetMove();
+      }
+      else {
+        // play this move
+        currentPosition.update(this->promotionMove.first, this->promotionMove.second, chosen);
+        lastMove = this->promotionMove;
+      }
+      // resets
+      this->promotionMove = INVALID_MOVE;
+      this->isPromptingPromotion = false;
+    }
+
+    else if (interaction.HasCompletedMove()){
+      Move move = interaction.getLastMove();
+      
+      if (currentPosition.isValidMove(move.first, move.second) && promptPromotion(move)){
+          currentPosition.update(move.first, move.second);
+          lastMove = move;
+      } 
+      else {
+          interaction.resetMove();
+      }
+    }  
   } 
 };
