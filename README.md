@@ -2,6 +2,7 @@
 
 A chess game written in C++ using [raylib](https://www.raylib.com/).
 
+<img width="605" height="610" alt="image" src="https://github.com/user-attachments/assets/b85ee7af-d787-4609-adc7-74e22ef1937d" />
 
 
 ## Features
