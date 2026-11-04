@@ -13,21 +13,26 @@ debug: build/debug
 release: build/release
 debug_no_o: build/debug_no_optimization
 
-build/debug: main.cpp $(HDRS)
+build:
+	mkdir build
+
+build/debug: main.cpp $(HDRS) build
 	@echo 'compiling debug'
 	$(CC) $(CFLAGS) $(DEBUG) main.cpp -o build/debug $(LIBS)
 
-build/debug_no_optimization: main.cpp $(HDRS)
+build/debug_no_optimization: main.cpp $(HDRS) build
 	@echo 'compiling debug (no optimizations)'
 	$(CC) $(DEBUG) main.cpp -o build/debug $(LIBS)
 
-build/release: main.cpp $(HDRS)
+build/release: main.cpp $(HDRS) build
 	@echo 'compiling release'
 	$(CC) $(CFLAGS) main.cpp -o build/release $(LIBS)
 
-build/test: testing.cpp $(HDRS)
+build/test: testing.cpp $(HDRS) build
 	@echo 'compiling testing'
 	$(CC) $(CFLAGS) testing.cpp -o build/test $(LIBS)
+
+run: run_debug
 
 run_debug: build/debug main.cpp $(HDRS)
 	./build/debug

@@ -142,19 +142,18 @@ class ChessGame{
     DrawSpot();
     DrawPromotion();
   }
-  
   void update(){
     if (interaction.populatePlayerInput()){
       #ifdef DEBUG_MODE
       std::cout << "---------------" << std::endl;
-      //interaction.print();
+      interaction.print();
       if (interaction.HasSelectedSquare()){
         currentPosition.print(interaction.getHighlightedPosition());
       }
-      if (interaction.HasCompletedMove()){
-        Move playerMove = interaction.getLastMove();
-      }
       #endif
+    }
+    else {
+      return; // early out
     }
     // handle selecting option for promotion
     if (interaction.HasSelectedSquare() && this->isPromptingPromotion){

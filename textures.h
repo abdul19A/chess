@@ -90,7 +90,7 @@ class ChessTexture{
     void _createOtherTextures(){
         Image movedImage =     GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::MOVED_COLOR   );
         Image selectedImage =  GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::SELECTED_COLOR);
-        Image checkImage =     GenImageColor(this->boardGridSize, this->boardGridSize, OtherTexturesAttribute::CHECK_COLOR   );
+        Image checkImage =     GenImageColor(this->boardGridSize, this->boardGridSize, {0x0, 0x0, 0x0, 0x0}); //OtherTexturesAttribute::CHECK_COLOR   );
         Image spotImage =      GenImageColor(this->boardGridSize, this->boardGridSize, {0x0, 0x0, 0x0, 0x0});
         Image promotionImage = GenImageColor(this->boardGridSize, this->boardGridSize*4, OtherTexturesAttribute::PROMOTION_COLOR);
         
@@ -98,6 +98,12 @@ class ChessTexture{
         ImageDrawCircle(&spotImage,
              this->boardGridSize/2, this->boardGridSize/2, 
              this->boardGridSize*SpotTextureAttribute::RAD_FRACTION/2, SpotTextureAttribute::COLOR);
+        
+        ImageDrawCircleGradient(&checkImage,
+            {this->boardGridSize/2, this->boardGridSize/2},
+             this->boardGridSize/2, 
+             OtherTexturesAttribute::CHECK_COLOR, 
+             ColorLerp({0x0, 0x0, 0x0, 0x0}, OtherTexturesAttribute::CHECK_COLOR, OtherTexturesAttribute::CHECK_OPACITY));
 
         this->movedTexture     = LoadTextureFromImage(movedImage    );  
         this->selectedTexture  = LoadTextureFromImage(selectedImage );  

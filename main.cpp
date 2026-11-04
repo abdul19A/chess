@@ -33,6 +33,9 @@ int main(int argc, char** argv)
             game.Draw();
         EndDrawing();
     }
+    #ifdef DEBUG_MODE
+        std::cout << "size of ChessGame object: " << sizeof(game) << std::endl;
+    #endif
     CloseWindow();
     return 0;
 }
